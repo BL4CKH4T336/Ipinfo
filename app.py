@@ -14,7 +14,7 @@ handler = ipinfo.getHandler(ipinfo_token)
 ipstack_api_key = '220e45d1a00539752f4b9f37c53b2c19'
 
 # Replace with your actual Telegram bot token
-bot_token = '8084534482:AAFXlSmxlxYCWjz41H7FbCKHOnb9_uA8qv8'
+bot_token = '7898132652:AAF1uUVCaF66XuSGd1swdTKlsmZNDervA4k'
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
