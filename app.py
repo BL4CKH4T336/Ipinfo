@@ -1,7 +1,8 @@
 import logging
 import requests
 import socket
-from telegram import Update                                                                                                                                                      from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Update
+from telegram.ext import Application, CommandHandler, CallbackContext
 import ipinfo
 import aiohttp
 
@@ -11,7 +12,7 @@ handler = ipinfo.getHandler(ipinfo_token)
 ipstack_api_key = '220e45d1a00539752f4b9f37c53b2c19'
 
 # Replace with your actual Telegram bot token
-bot_token = '7791892519:AAF07EHEO-9eS10_5nWcaWYAq0jUVzU_WZ0'
+bot_token = '7646309400:AAHutyGkcwa3XjHDCXr8-4agSFu6puV0r5Q'
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -34,7 +35,9 @@ async def get_ip_info(ip_address: str) -> dict:
         "country": ipinfo_details.country_name if hasattr(ipinfo_details, 'country_name') else 'N/A',
         "region": ipinfo_details.region if hasattr(ipinfo_details, 'region') else 'N/A',
         "city": ipinfo_details.city if hasattr(ipinfo_details, 'city') else 'N/A',
-        "zip": ipinfo_details.postal if hasattr(ipinfo_details, 'postal') else 'N/A',                                                                                                    "coordinates": ipinfo_details.loc if hasattr(ipinfo_details, 'loc') else 'N/A',                                                                                                  "organization": ipinfo_details.org if hasattr(ipinfo_details, 'org') else 'N/A',
+        "zip": ipinfo_details.postal if hasattr(ipinfo_details, 'postal') else 'N/A',
+        "coordinates": ipinfo_details.loc if hasattr(ipinfo_details, 'loc') else 'N/A',
+        "organization": ipinfo_details.org if hasattr(ipinfo_details, 'org') else 'N/A',
         "asn": ipinfo_details.asn if hasattr(ipinfo_details, 'asn') else 'N/A',
         "timezone": ipstack_details.get("time_zone", {}).get("id", "N/A"),
         "current_time": ipstack_details.get("time_zone", {}).get("current_time", "N/A"),
