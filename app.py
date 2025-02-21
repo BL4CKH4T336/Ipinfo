@@ -1,9 +1,9 @@
 import logging
 import requests
 import socket
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Update                                                                                                                                                      from telegram.ext import Application, CommandHandler, CallbackContext
 import ipinfo
+import aiohttp
 
 # Replace with your actual IPinfo and ipstack API access tokens
 ipinfo_token = 'a6f88e599f7e36'
@@ -21,12 +21,12 @@ async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Hello! Use /ip <IP_ADDRESS> or /host <HOSTNAME> to get information.')
 
 async def get_ip_info(ip_address: str) -> dict:
-    # Fetch details from ipinfo
     ipinfo_details = handler.getDetails(ip_address)
 
-    # Fetch details from ipstack
-    url = f'http://api.ipstack.com/{ip_address}?access_key={ipstack_api_key}'
-    ipstack_details = requests.get(url).json()
+    async with aiohttp.ClientSession() as session:
+        url = f'http://api.ipstack.com/{ip_address}?access_key={ipstack_api_key}'
+        async with session.get(url) as response:
+            ipstack_details = await response.json()
 
     details = {
         "ip": ipinfo_details.ip,
@@ -34,9 +34,7 @@ async def get_ip_info(ip_address: str) -> dict:
         "country": ipinfo_details.country_name if hasattr(ipinfo_details, 'country_name') else 'N/A',
         "region": ipinfo_details.region if hasattr(ipinfo_details, 'region') else 'N/A',
         "city": ipinfo_details.city if hasattr(ipinfo_details, 'city') else 'N/A',
-        "zip": ipinfo_details.postal if hasattr(ipinfo_details, 'postal') else 'N/A',
-        "coordinates": ipinfo_details.loc if hasattr(ipinfo_details, 'loc') else 'N/A',
-        "organization": ipinfo_details.org if hasattr(ipinfo_details, 'org') else 'N/A',
+        "zip": ipinfo_details.postal if hasattr(ipinfo_details, 'postal') else 'N/A',                                                                                                    "coordinates": ipinfo_details.loc if hasattr(ipinfo_details, 'loc') else 'N/A',                                                                                                  "organization": ipinfo_details.org if hasattr(ipinfo_details, 'org') else 'N/A',
         "asn": ipinfo_details.asn if hasattr(ipinfo_details, 'asn') else 'N/A',
         "timezone": ipstack_details.get("time_zone", {}).get("id", "N/A"),
         "current_time": ipstack_details.get("time_zone", {}).get("current_time", "N/A"),
@@ -144,7 +142,8 @@ def main() -> None:
     application.add_handler(CommandHandler("ip", ip_command))
     application.add_handler(CommandHandler("host", host_command))
 
-    application.run_polling()
+    # Serve the application on port 8000
+    application.run_polling(allowed_updates=Update.ALL, port=8000)
 
 if __name__ == '__main__':
     main()
