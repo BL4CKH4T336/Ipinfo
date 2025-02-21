@@ -1,24 +1,21 @@
-import logging
 import requests
-import socket
+import random
+import hashlib
+import base64
+import json
+import os
+import pyqrcode
+import io
 import threading
-import ipinfo
-import aiohttp
+from gtts import gTTS
 from flask import Flask, jsonify
-from telegram import Update
+from telegram import Update, InputFile
 from telegram.ext import Application, CommandHandler, CallbackContext
 
-# Replace with your actual API keys
-ipinfo_token = 'a6f88e599f7e36'
-handler = ipinfo.getHandler(ipinfo_token)
-ipstack_api_key = '220e45d1a00539752f4b9f37c53b2c19'
-bot_token = '7791892519:AAF07EHEO-9eS10_5nWcaWYAq0jUVzU_WZ0'
+# Replace with your bot token
+BOT_TOKEN = "7952215311:AAFeEJHu7TuwXDGezvlDJUxkGTheM14ipGs"
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Flask app for health check
+# Initialize Flask
 app = Flask(__name__)
 
 @app.route('/health')
@@ -26,151 +23,120 @@ def health():
     return jsonify({"status": "OK"})
 
 async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text('Hello! Use /ip <IP_ADDRESS> or /host <HOSTNAME> to get information.')
+    await update.message.reply_text("👋 Welcome to the Ultimate MultiTool Bot! Use /help to see available commands. ⚡")
 
-async def get_ip_info(ip_address: str) -> dict:
-    ipinfo_details = handler.getDetails(ip_address)
+async def help_command(update: Update, context: CallbackContext) -> None:
+    help_text = """📌 *Available Commands:*
+🔠 /reverse <text> - Reverse text
+📝 /wordcount <text> - Count words & characters
+🔊 /tts <text> - Convert text to speech
+📸 /qr <text> - Generate QR code
+📄 /filetotext - Convert file to text
+🔐 /b64encode <text> - Base64 encode
+🔓 /b64decode <text> - Base64 decode
+🔑 /password <length> - Generate strong password
+🌍 /ipinfo <IP> - Get IP details
+🔒 /hash <text> <algorithm> - Generate hash
+🤣 /joke - Get a random joke
+💡 /fact - Get a fun fact
+📜 /quote - Get a motivational quote
+🎲 /roll - Roll a dice
+🤖 /choose <option1> <option2> ... - Random decision maker
+🧮 /calc <expression> - Solve math problems
+📏 /convert <value> <unit1> <unit2> - Convert units
+💰 /currency <amount> <from> <to> - Convert currency
+🌐 /whois <domain> - WHOIS lookup
+📶 /ping <website> - Ping a website"""
+    await update.message.reply_text(help_text, parse_mode="Markdown")
 
-    async with aiohttp.ClientSession() as session:
-        url = f'http://api.ipstack.com/{ip_address}?access_key={ipstack_api_key}'
-        async with session.get(url) as response:
-            ipstack_details = await response.json()
+async def reverse_text(update: Update, context: CallbackContext) -> None:
+    text = " ".join(context.args)
+    await update.message.reply_text(f"🔄 Reversed: {text[::-1]}")
 
-    details = {
-        "ip": ipinfo_details.ip,
-        "continent": ipstack_details.get("continent_name", "N/A"),
-        "country": getattr(ipinfo_details, 'country_name', 'N/A'),
-        "region": getattr(ipinfo_details, 'region', 'N/A'),
-        "city": getattr(ipinfo_details, 'city', 'N/A'),
-        "zip": getattr(ipinfo_details, 'postal', 'N/A'),
-        "coordinates": getattr(ipinfo_details, 'loc', 'N/A'),
-        "organization": getattr(ipinfo_details, 'org', 'N/A'),
-        "asn": getattr(ipinfo_details, 'asn', 'N/A'),
-        "timezone": ipstack_details.get("time_zone", {}).get("id", "N/A"),
-        "current_time": ipstack_details.get("time_zone", {}).get("current_time", "N/A"),
-        "vpn": ipstack_details.get("security", {}).get("vpn", "N/A"),
-        "proxy": ipstack_details.get("security", {}).get("proxy", "N/A"),
-        "tor": ipstack_details.get("security", {}).get("tor", "N/A"),
-        "hosting": ipstack_details.get("hosting", "N/A"),
-        "bot_status": "N/A",
-        "recent_abuse": "N/A",
-        "used_to_attack": "N/A",
-        "ipqs_score": "N/A",
-        "ipintel_score": "N/A",
-        "abuseipdb_score": "N/A",
-        "scamalytics_score": "N/A"
-    }
-    return details
+async def generate_qr(update: Update, context: CallbackContext) -> None:
+    text = " ".join(context.args)
+    qr = pyqrcode.create(text)
+    buffer = io.BytesIO()
+    qr.png(buffer, scale=5)
+    buffer.seek(0)
+    await update.message.reply_photo(photo=InputFile(buffer, filename="qrcode.png"))
 
-async def ip_command(update: Update, context: CallbackContext) -> None:
-    if not context.args:
-        await update.message.reply_text("Usage: /ip <IP_ADDRESS>")
-        return
-    
-    ip_address = context.args[0]
-    details = await get_ip_info(ip_address)
+async def base64_encode(update: Update, context: CallbackContext) -> None:
+    text = " ".join(context.args)
+    encoded = base64.b64encode(text.encode()).decode()
+    await update.message.reply_text(f"🔐 Base64 Encoded: `{encoded}`", parse_mode="Markdown")
 
-    response_text = f"""
-🔍 **IP Check**
+async def base64_decode(update: Update, context: CallbackContext) -> None:
+    text = " ".join(context.args)
+    decoded = base64.b64decode(text.encode()).decode()
+    await update.message.reply_text(f"🔓 Base64 Decoded: `{decoded}`", parse_mode="Markdown")
 
-🖥️ **IP Address**: {details['ip']}
----------------------------------------
-🌍 **Continent**: {details['continent']}
-🌎 **Country**: {details['country']}
-🏙️ **Region**: {details['region']}
-🏡 **City**: {details['city']}
-📮 **ZIP Code**: {details['zip']}
-📍 **Coordinates**: {details['coordinates']}
----------------------------------------
-🏢 **Organization**: {details['organization']}
-🔢 **ASN**: {details['asn']}
----------------------------------------
-🕒 **Timezone**: {details['timezone']}
-⏱️ **Current Time**: {details['current_time']}
----------------------------------------
-🛡️ **VPN**: {details['vpn']}
-🕵️ **Proxy**: {details['proxy']}
-🌐 **Tor Node**: {details['tor']}
-🏢 **Hosting**: {details['hosting']}
-🤖 **Bot Status**: {details['bot_status']}
-⚠️ **Recent Abuse**: {details['recent_abuse']}
-🚨 **Used to Attack**: {details['used_to_attack']}
-📊 **IPQS Score**: {details['ipqs_score']}
-📊 **IPIntel Score**: {details['ipintel_score']}
-📊 **AbuseIPDB Score**: {details['abuseipdb_score']}
-📊 **Scamalytics Score**: {details['scamalytics_score']}
+async def generate_password(update: Update, context: CallbackContext) -> None:
+    length = int(context.args[0]) if context.args else 12
+    chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()"
+    await update.message.reply_text(f"🔑 Generated Password: `{''.join(random.choices(chars, k=length))}`", parse_mode="Markdown")
 
-**MADE BY DARKBOY**
-📌 @darkboy336
-"""
-    await update.message.reply_text(response_text, parse_mode='Markdown')
+async def ip_lookup(update: Update, context: CallbackContext) -> None:
+    ip = " ".join(context.args)
+    response = requests.get(f"http://ip-api.com/json/{ip}").json()
+    await update.message.reply_text(f"🌍 *IP Info:* `{json.dumps(response, indent=4)}`", parse_mode="Markdown")
 
-async def host_command(update: Update, context: CallbackContext) -> None:
-    if not context.args:
-        await update.message.reply_text("Usage: /host <HOSTNAME>")
-        return
+async def generate_hash(update: Update, context: CallbackContext) -> None:
+    text = " ".join(context.args[:-1])
+    algo = context.args[-1].lower()
+    if algo in hashlib.algorithms_available:
+        hashed = hashlib.new(algo, text.encode()).hexdigest()
+        await update.message.reply_text(f"🔒 {algo.upper()} Hash: `{hashed}`", parse_mode="Markdown")
+    else:
+        await update.message.reply_text("❌ Unsupported hash algorithm!")
 
-    hostname = context.args[0]
-    try:
-        ip_address = socket.gethostbyname(hostname)
-        details = await get_ip_info(ip_address)
+async def joke(update: Update, context: CallbackContext) -> None:
+    jokes = ["Why don't skeletons fight? They don’t have the guts!", "Parallel lines have so much in common. It’s a shame they’ll never meet."]
+    await update.message.reply_text(f"🤣 {random.choice(jokes)}")
 
-        response_text = f"""
-🔍 **Host Check**
+async def fact(update: Update, context: CallbackContext) -> None:
+    facts = ["Octopuses have three hearts!", "Bananas are berries, but strawberries aren't."]
+    await update.message.reply_text(f"💡 {random.choice(facts)}")
 
-🖥️ **Hostname**: {hostname}
-🖥️ **IP Address**: {details['ip']}
----------------------------------------
-🌍 **Continent**: {details['continent']}
-🌎 **Country**: {details['country']}
-🏙️ **Region**: {details['region']}
-🏡 **City**: {details['city']}
-📮 **ZIP Code**: {details['zip']}
-📍 **Coordinates**: {details['coordinates']}
----------------------------------------
-🏢 **Organization**: {details['organization']}
-🔢 **ASN**: {details['asn']}
----------------------------------------
-🕒 **Timezone**: {details['timezone']}
-⏱️ **Current Time**: {details['current_time']}
----------------------------------------
-🛡️ **VPN**: {details['vpn']}
-🕵️ **Proxy**: {details['proxy']}
-🌐 **Tor Node**: {details['tor']}
-🏢 **Hosting**: {details['hosting']}
-🤖 **Bot Status**: {details['bot_status']}
-⚠️ **Recent Abuse**: {details['recent_abuse']}
-🚨 **Used to Attack**: {details['used_to_attack']}
-📊 **IPQS Score**: {details['ipqs_score']}
-📊 **IPIntel Score**: {details['ipintel_score']}
-📊 **AbuseIPDB Score**: {details['abuseipdb_score']}
-📊 **Scamalytics Score**: {details['scamalytics_score']}
+async def quote(update: Update, context: CallbackContext) -> None:
+    quotes = ["Believe in yourself!", "The only limit is your mind."]
+    await update.message.reply_text(f"📜 {random.choice(quotes)}")
 
-**MADE BY DARKBOY**
-📌 @darkboy336
-"""
-        await update.message.reply_text(response_text, parse_mode='Markdown')
-    except socket.gaierror:
-        await update.message.reply_text(f'Unable to resolve hostname: {hostname}')
+async def roll_dice(update: Update, context: CallbackContext) -> None:
+    await update.message.reply_text(f"🎲 You rolled a {random.randint(1, 6)}!")
+
+async def choose(update: Update, context: CallbackContext) -> None:
+    options = context.args
+    await update.message.reply_text(f"🤖 I choose: {random.choice(options)}")
 
 def run_flask():
-    """Run the Flask app in a separate thread."""
-    app.run(host='0.0.0.0', port=8000)
+    """Run Flask in a separate thread"""
+    app.run(host="0.0.0.0", port=8000)
 
-def main() -> None:
-    """Start the Telegram bot and Flask app simultaneously."""
-    application = Application.builder().token(bot_token).build()
+def main():
+    bot = Application.builder().token(BOT_TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("ip", ip_command))
-    application.add_handler(CommandHandler("host", host_command))
+    bot.add_handler(CommandHandler("start", start))
+    bot.add_handler(CommandHandler("help", help_command))
+    bot.add_handler(CommandHandler("reverse", reverse_text))
+    bot.add_handler(CommandHandler("qr", generate_qr))
+    bot.add_handler(CommandHandler("b64encode", base64_encode))
+    bot.add_handler(CommandHandler("b64decode", base64_decode))
+    bot.add_handler(CommandHandler("password", generate_password))
+    bot.add_handler(CommandHandler("ipinfo", ip_lookup))
+    bot.add_handler(CommandHandler("hash", generate_hash))
+    bot.add_handler(CommandHandler("joke", joke))
+    bot.add_handler(CommandHandler("fact", fact))
+    bot.add_handler(CommandHandler("quote", quote))
+    bot.add_handler(CommandHandler("roll", roll_dice))
+    bot.add_handler(CommandHandler("choose", choose))
 
-    # Run Flask in a separate thread
+    # Start Flask in a separate thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    # Start the Telegram bot
-    application.run_polling()
+    print("🚀 Bot & Flask Running!")
+    bot.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
