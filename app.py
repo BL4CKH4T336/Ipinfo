@@ -12,7 +12,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 ipinfo_token = 'a6f88e599f7e36'
 handler = ipinfo.getHandler(ipinfo_token)
 ipstack_api_key = '220e45d1a00539752f4b9f37c53b2c19'
-bot_token = '8084534482:AAFXlSmxlxYCWjz41H7FbCKHOnb9_uA8qv8'
+bot_token = '7791892519:AAF07EHEO-9eS10_5nWcaWYAq0jUVzU_WZ0'
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
