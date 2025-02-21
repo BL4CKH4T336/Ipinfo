@@ -1,5 +1,6 @@
-aiohttp
-flask
-ipinfo
-python-telegram-bot
 requests
+pyqrcode
+pypng
+gTTS
+Flask
+python-telegram-bot==20.0
