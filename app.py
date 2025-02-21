@@ -146,7 +146,7 @@ def main() -> None:
     application.add_handler(CommandHandler("host", host_command))
 
     # Serve the application on port 8000
-    application.run_polling(allowed_updates=Update.ALL, port=8000)
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
