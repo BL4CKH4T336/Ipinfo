@@ -1,0 +1,4 @@
+aiohttp
+ipinfo
+python-telegram-bot
+requests
